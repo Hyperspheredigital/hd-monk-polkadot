@@ -1,0 +1,211 @@
+namespace: parachain
+
+parachain-launch:
+  defines: runnable
+  containers:
+    defines: containers
+    buildenv:
+      image: docker:latest
+      entrypoint: "/generate.sh"
+      paths:
+        - <- `${workdir}:${workdir}`
+        - /var/run/docker.sock:/var/run/docker.sock
+        - /tmp:/tmp
+      ports:
+        - "8000:8000"
+  checks:
+    defines: checks
+    readiness:
+      code: exec("buildenv", "/bin/sh", "-c", "cat", `${workdir}/output/status`) contains?("done")
+      period: 15
+      initialDelay: 30
+  variables:
+    defines: variables
+    workdir:
+      type: string
+      value: <- `${monk-volume-path}/parachain-launch`
+  files:
+    defines: files
+    config:
+      container: buildenv
+      path: <-`${workdir}/config.yml`
+      mode: 0666
+      raw: true
+      contents: |
+        # Relaychain Configuration
+        relaychain:
+          image: parity/polkadot:v0.9.9-1 # the docker image to use
+          chain: rococo-local # the chain to use
+          runtimeGenesisConfig: # additonal genesis override
+            configuration:
+              config:
+                validation_upgrade_frequency: 1
+                validation_upgrade_delay: 1
+          env: # environment variables for all relaychain nodes
+            RUST_LOG: parachain::candidate-backing=trace
+          flags: # additional CLI flags for all relaychain nodes
+            - --rpc-methods=unsafe
+            - --no-beefy
+          nodes: # nodes config
+            - name: alice # the node name and session key, this imply `--alice`
+              wsPort: 9944 # default ws port number is `9944 + global_node_index`
+              rpcPort: 9933 # default rpc port number is `9933 + global_node_index`
+              port: 30333 # default libp2p port number is `30333 + global_node_index`
+              flags: # additional CLI flags for this node
+                - --force-authoring
+              env:
+                RUST_LOG: babe=debug # environment varitables for this node
+            - name: bob
+            - name: charlie
+
+        # Parachain Configuration
+        parachains:
+        # Config for first parachain
+        - image: acala/karura-node:1.3.0
+          chain: # this could be a string like `dev` or a config object
+            base: karura-dev # the chain to use
+            collators: # override collators
+              - alice # this imply //Alice
+              - rXMrmePtNnyZ61hvpjfEEZ1zmKzueUnTqijDncTzE8Wa2sJ # or could be a session key public address
+              - charlie
+            sudo: alice # override sudo key to //Alice
+          id: 2000 # override parachain id
+          parachain: true # this is parachain, not parathread
+          flags: # CLI flags for this parachain nodes
+            - --rpc-methods=unsafe
+            - --force-authoring
+            - --execution=wasm
+          relaychainFlags: # CLI flags for the relaychain port
+            - --execution=wasm
+            - --no-beefy
+          env: # environment variables for this parachain nodes
+            RUST_LOG: sc_basic_authorship=trace
+          volumePath: /acala/data # The path to mount volume and base path, default to /data
+          nodes: # nodes config
+          - wsPort: 9947
+            rpcPort: 9936
+            port: 30336
+            flags: # additional CLI flags for this node
+              - --alice
+            relaychainFlags: # additional CLI flags for relaychian part
+              - --name=relaychain-alice
+            env:
+              RUST_LOG: aura=debug # environment varitables for this node
+          - flags:
+            - --bob
+          - flags:
+            - --charlie
+    generate:
+      container: buildenv
+      path: /generate.sh
+      mode: 0777
+      contents: |
+        #!/usr/bin/env sh
+        echo "working" > status
+        WORKDIR={{ v "workdir" }}
+        apk add yarn
+        yarn global add @open-web3/parachain-launch
+        cd $WORKDIR
+        parachain-launch generate --config=config.yml --yes --output=output
+        apk add python3
+        cd output 
+        echo "done" > status
+        python3 -m http.server
+
+relay-alice:
+  defines: runnable
+  inherits: polkadot/node
+  depends:
+    defines: depends
+    wait-for:
+      runnables:
+        - parachain/parachain-launch
+      timeout: 120
+  variables:
+    name: alice
+    options: --chain=/app/rococo-local.json --validator --alice --rpc-methods=unsafe --no-beefy --force-authoring
+    fileserver:
+      type: string
+      value: <- get-hostname("parachain/parachain-launch", "buildenv")
+    pre:
+      type: string
+      value: <- `curl http://${fileserver}/rococo-local.json -o /app/rococo-local.json`
+    rpc-port: 9945
+    ws-port: 9934
+    p2p-port: 30334
+
+relay-bob:
+  defines: runnable
+  inherits: parachain/relay-alice
+  variables:
+    name: bob
+    options: --chain=/app/rococo-local.json --validator --bob --rpc-methods=unsafe --no-beefy
+    rpc-port: 9946
+    ws-port: 9935
+    p2p-port: 30335
+
+relay-charlie:
+  defines: runnable
+  inherits: parachain/relay-alice
+  variables:
+    name: charlie
+    options: --chain=/app/rococo-local.json --validator --charlie --rpc-methods=unsafe --no-beefy
+    rpc-port: 9947
+    ws-port: 9936
+    p2p-port: 30336
+
+para-alice:
+  defines: runnable
+  inherits: acala/karura-node
+  depends:
+    defines: depends
+    wait-for:
+      runnables:
+        - parachain/parachain-launch
+      timeout: 120
+  variables:
+    name: parachain-2000-0
+    options: --chain=/app/karura-dev-2000.json --collator --parachain-id=2000 --execution=wasm --listen-addr=/ip4/0.0.0.0/tcp/30333 --node-key=69048f3313b2c4920e9699566e894b8e7828afeac7aef752ab835ce6d2e32095 --alice --rpc-methods=unsafe --no-beefy --force-authoring -- --chain=/app/rococo-local.json --execution=wasm --no-beefy --name=relaychain-alice
+    fileserver:
+      type: string
+      value: <- get-hostname("parachain/parachain-launch", "buildenv")
+    pre:
+      type: string
+      value: <- `curl http://${fileserver}/karura-dev-2000.json -o karura-dev-2000.json`
+    rpc-port: 9948
+    ws-port: 9937
+    p2p-port: 30337
+    bootnode-addr:
+      type: string
+      value: <- get-hostname("parachain/para-alice", "node")
+
+para-bob:
+  defines: runnable
+  inherits: parachain/para-alice
+  variables:
+    name: parachain-2000-1
+    options: <- `--chain=/app/karura-dev-2000.json --collator --parachain-id=2000 --execution=wasm --listen-addr=/ip4/0.0.0.0/tcp/30333 --bootnodes=/dns/${bootnode-addr}/tcp/30333/p2p/12D3KooWDmrJsKLpEDrtkTyryzo4XdpfG1AQDhHvJw56daCHAzGx --bob --rpc-methods=unsafe --no-beefy --force-authoring -- --chain=/app/rococo-local.json --execution=wasm --no-beefy`
+    rpc-port: 9949
+    ws-port: 9938
+    p2p-port: 30338
+
+para-charlie:
+  defines: runnable
+  inherits: parachain/para-alice
+  variables:
+    name: parachain-2000-2
+    options: <- `--chain=/app/karura-dev-2000.json --collator --parachain-id=2000 --execution=wasm --listen-addr=/ip4/0.0.0.0/tcp/30333 --bootnodes=/dns/${bootnode-addr}/tcp/30333/p2p/12D3KooWDmrJsKLpEDrtkTyryzo4XdpfG1AQDhHvJw56daCHAzGx --charlie --rpc-methods=unsafe --no-beefy --force-authoring -- --chain=/app/rococo-local.json --execution=wasm --no-beefy`
+    rpc-port: 9950
+    ws-port: 9939
+    p2p-port: 30339
+
+system:
+  defines: process-group
+  runnable-list:
+    - parachain/parachain-launch
+    - parachain/relay-alice
+    - parachain/relay-bob
+    - parachain/relay-charlie
+    - parachain/para-alice
+    - parachain/para-bob
+    - parachain/para-charlie

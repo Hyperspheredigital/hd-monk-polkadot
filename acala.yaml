@@ -1,0 +1,65 @@
+namespace: acala
+
+node:
+  defines: runnable
+  containers:
+    defines: containers
+    node:
+      image: acala/acala-node:latest
+      user: root
+      ports:
+        - 9944:9944
+        - 9933:9933
+        - 30333:30333
+      paths:
+        - <- `${monk-volume-path}/acala_${name}:/acala/data`
+      bash: <- `/usr/local/bin/acala-dev --name="${name}" --ws-external --rpc-external ${options}`
+  variables:
+    defines: variables
+    options: ""
+    name: acala-node-on-monk-io
+
+karura-node:
+  defines: runnable
+  containers:
+    defines: containers
+    node:
+      image: acala/karura-node:1.3.0
+      user: root
+      ports:
+        - <- `${rpc-port}:9944`
+        - <- `${ws-port}:9933`
+        - <- `${p2p-port}:30333`
+      paths:
+        - <- `${monk-volume-path}/acala_${name}:/acala/data`
+      bash: <- `/usr/local/bin/acala --base-path=/acala/data --name="${name}" --ws-external --rpc-external --rpc-cors=all ${options}`
+  variables:
+    defines: variables
+    options: ""
+    rpc-port: 9948
+    ws-port: 9937
+    p2p-port: 30337
+    name: acala-node-on-monk-io
+
+karura-collator:
+  defines: runnable
+  containers:
+    defines: containers
+    node:
+      image: acala/karura-node:1.3.0
+      user: root
+      ports:
+        - <- `${rpc-port}:9944`
+        - <- `${ws-port}:9933`
+        - <- `${p2p-port}:30333`
+      paths:
+        - <- `${monk-volume-path}/acala_${name}:/acala/data`
+      bash: <- `${pre} ; /usr/local/bin/acala --base-path=/acala/data --chain karura --execution=wasm --collator --name="${name}" ${options}`
+  variables:
+    defines: variables
+    options: ""
+    pre: ""
+    rpc-port: 9968
+    ws-port: 9947
+    p2p-port: 30347
+    name: acala-collator-on-monk-io

@@ -1,0 +1,41 @@
+namespace: polkadot
+
+node:
+  defines: runnable
+  containers:
+    defines: containers
+    node:
+      image: parity/polkadot:v0.9.9-1
+      user: root
+      ports:
+        - <- `${rpc-port}:9944`
+        - <- `${ws-port}:9933`
+        - <- `${p2p-port}:30333`
+      paths:
+        - <- `${monk-volume-path}/polkadot_${name}:/data`
+      bash: <- `${pre} ; /usr/bin/polkadot --base-path=/data --name="${name}" --ws-external --rpc-external --prometheus-external --rpc-cors=all ${options}`
+  variables:
+    defines: variables
+    options: ""
+    pre: ""
+    name: polkadot-node-on-monk-io
+    rpc-port: 9944
+    ws-port: 9933
+    p2p-port: 30333
+
+node-persistent:
+  defines: runnable
+  inherits: polkadot/node
+  volumes:
+    defines: volumes
+    polkadot-db:
+      size: 100
+      kind: SSD
+      path: <- `${monk-volume-path}/polkadot_${name}`
+
+westend:
+  inherits: polkadot/node
+  defines: runnable
+  variables:
+    options: --chain=westend
+    name: westend-node-on-monk-io

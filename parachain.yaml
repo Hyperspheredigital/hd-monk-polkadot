@@ -1,0 +1,74 @@
+namespace: parachain
+
+relay-alice:
+  defines: runnable
+  inherits: polkadot/node
+  variables:
+    name: alice
+    options: --chain=/app/rococo-local.json --validator --alice --rpc-methods=unsafe --no-beefy --force-authoring
+    rpc-port: 9945
+    ws-port: 9934
+    p2p-port: 30334
+
+relay-bob:
+  defines: runnable
+  inherits: parachain/relay-alice
+  variables:
+    name: bob
+    options: --chain=/app/rococo-local.json --validator --bob --rpc-methods=unsafe --no-beefy
+    rpc-port: 9946
+    ws-port: 9935
+    p2p-port: 30335
+
+relay-charlie:
+  defines: runnable
+  inherits: parachain/relay-alice
+  variables:
+    name: charlie
+    options: --chain=/app/rococo-local.json --validator --charlie --rpc-methods=unsafe --no-beefy
+    rpc-port: 9947
+    ws-port: 9936
+    p2p-port: 30336
+
+para-alice:
+  defines: runnable
+  inherits: acala/karura-node
+  variables:
+    name: parachain-2000-0
+    options: --chain=/app/parachain-local.json --collator --parachain-id=2000 --execution=wasm --listen-addr=/ip4/0.0.0.0/tcp/30333 --node-key=69048f3313b2c4920e9699566e894b8e7828afeac7aef752ab835ce6d2e32095 --alice --rpc-methods=unsafe --no-beefy --force-authoring -- --chain=/app/rococo-local.json --execution=wasm --no-beefy --name=relaychain-alice
+    rpc-port: 9948
+    ws-port: 9937
+    p2p-port: 30337
+    bootnode-addr:
+      type: string
+      value: <- get-hostname("parachain/para-alice", "node")
+
+para-bob:
+  defines: runnable
+  inherits: parachain/para-alice
+  variables:
+    name: parachain-2000-1
+    options: <- `--chain=/app/parachain-local.json --collator --parachain-id=2000 --execution=wasm --listen-addr=/ip4/0.0.0.0/tcp/30333 --bootnodes=/dns/${bootnode-addr}/tcp/30333/p2p/12D3KooWDmrJsKLpEDrtkTyryzo4XdpfG1AQDhHvJw56daCHAzGx --bob --rpc-methods=unsafe --no-beefy --force-authoring -- --chain=/app/rococo-local.json --execution=wasm --no-beefy`
+    rpc-port: 9949
+    ws-port: 9938
+    p2p-port: 30338
+
+para-charlie:
+  defines: runnable
+  inherits: parachain/para-alice
+  variables:
+    name: parachain-2000-2
+    options: <- `--chain=/app/parachain-local.json --collator --parachain-id=2000 --execution=wasm --listen-addr=/ip4/0.0.0.0/tcp/30333 --bootnodes=/dns/${bootnode-addr}/tcp/30333/p2p/12D3KooWDmrJsKLpEDrtkTyryzo4XdpfG1AQDhHvJw56daCHAzGx --charlie --rpc-methods=unsafe --no-beefy --force-authoring -- --chain=/app/rococo-local.json --execution=wasm --no-beefy`
+    rpc-port: 9950
+    ws-port: 9939
+    p2p-port: 30339
+
+relay-system:
+  defines: process-group
+  runnable-list:
+    - parachain/relay-alice
+    - parachain/relay-bob
+    - parachain/relay-charlie
+    - parachain/para-alice
+    - parachain/para-bob
+    - parachain/para-charlie

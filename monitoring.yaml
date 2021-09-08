@@ -1,0 +1,95 @@
+namespace: polkadot
+
+prometheus:
+  defines: runnable
+  containers:
+    defines: containers
+    prometheus:
+      image: prom/prometheus:latest
+  files:
+    defines: files
+    config:
+      container: prometheus
+      path: /etc/prometheus/prometheus.yml
+      mode: 0666
+      contents: |
+        global:
+          scrape_interval: 15s
+          evaluation_interval: 15s
+        scrape_configs:
+          - job_name: "prometheus"
+            scrape_interval: 5s
+            static_configs:
+              - targets: ["localhost:9090"]
+          - job_name: "substrate_node"
+            scrape_interval: 5s 
+            static_configs:
+              - targets: ["{{ v "polkadot-node-addr" }}:9615"]
+  variables:
+    defines: variables
+    runnable: polkadot/node
+    polkadot-node-addr:
+      type: string
+      value: <- get-hostname($runnable, "node")
+
+grafana:
+  defines: runnable
+  containers:
+    defines: containers
+    grafana:
+      image: grafana/grafana:latest
+      ports:
+        - 3000:3000
+  variables:
+    defines: variables
+    prometheus-addr:
+      type: string
+      value: <- get-hostname("polkadot/prometheus", "prometheus")
+  files:
+    defines: files
+    provisioning-dashboards:
+      container: grafana
+      path: /etc/grafana/provisioning/dashboards/dashboards.yaml
+      mode: 0666
+      contents: |
+        apiVersion: 1
+        providers:
+          - name: 'polkadot-nodes-metrics'
+            orgId: 1
+            folder: ''
+            folderUid: ''
+            type: file
+            disableDeletion: false
+            editable: true
+            updateIntervalSeconds: 10
+            allowUiUpdates: true
+            options:
+              path: /var/lib/grafana/dashboards
+    dashboard:
+      inherits: polkadot/metrics-dashboard
+      container: grafana
+      mode: 0666
+      path: /var/lib/grafana/dashboards/polkadot.json
+    provisioning-datasources:
+      container: grafana
+      path: /etc/grafana/provisioning/datasources/datasources.yaml
+      mode: 0666
+      contents: |
+        apiVersion: 1
+        datasources:
+          - name: prometheus
+            type: prometheus
+            access: Browser
+            url: http://{{ v "prometheus-addr" }}:9090
+            isDefault: true
+            version: 1
+            editable: true
+
+monitoring:
+  defines: process-group
+  runnable-list:
+    - polkadot/prometheus
+    - polkadot/grafana
+  variables:
+    defines: variables
+    runnable: polkadot/node
