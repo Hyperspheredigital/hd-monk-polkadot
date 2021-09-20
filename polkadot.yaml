@@ -13,7 +13,7 @@ node:
         - <- `${p2p-port}:30333`
       paths:
         - <- `${monk-volume-path}/polkadot_${name}:/data`
-      bash: <- `${pre} ; /usr/bin/polkadot --base-path=/data --name="${name}" --ws-external --rpc-external --prometheus-external --rpc-cors=all ${options}`
+      bash: <- `/usr/bin/polkadot --base-path=/data --name="${name}" --ws-external --rpc-external --prometheus-external --rpc-cors=all ${options}`
   variables:
     defines: variables
     options: ""
