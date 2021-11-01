@@ -1,12 +1,11 @@
 # Polkadot+Monk demo templates
 
-This repo contains templates used in the [Polkadot](https://polkadot.network/)+[Monk](https://monk.io) demo. The templates are published on [monkhub.io](https://monkhub.io) so that you can run them without pulling this repo.
-
+This repo contains templates used in the [Polkadot](https://polkadot.network/)+[Monk](https://monk.io) demo.
 Note that these templates are using official, unmodified Docker images from Polkadot and Acala.
 
 These templates are for demonstration and development purposes and they are not intended for production use i.e. running secure validators for [Polkadot](https://polkadot.network/) or [Acala](https://acala.network/). While it is certainly possible with Monk, these templates are not implementing such functionality at this moment.
 
-## Getting Monk
+## Prep
 
 You'll need Monk installed on your machine to run these templates: [Getting Monk](https://docs.monk.io/docs/get-monk).
 
@@ -15,6 +14,12 @@ Read if you want to run a Monk cluster: [Creating a Monk Cluster](https://docs.m
 Read the [Documentation](https://docs.monk.io/docs/).
 
 ## Usage
+
+First, load all templates in this order:
+
+```
+monk load polkadot.yaml acala.yaml monitoring-files.yaml monitoring.yaml
+```
 
 Run Polkadot node:
 
@@ -35,12 +40,17 @@ Run Acala node:
 monk run acala/node
 ```
 
-Run Polkadot+Acala collator parachain dev setup:
+Add monitoring to your polkadot node:
 
 ```
-monk run parachain/system
-monk run -t mytag parachain/system
+monk run -t mytag polkadot/monitoring
 ```
+
+This will start grafana & prometheus pre-configured to read stats off your `polkadot/node`.
+
+## Caveats
+
+Attempting to run both Polkadot and Acala on the same machine at the same time will likely fail because of port collisions. Just stop the previous one or select another tag when running the second one.
 
 ## Hacking
 
