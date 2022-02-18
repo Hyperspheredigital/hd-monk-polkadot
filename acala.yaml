@@ -1,11 +1,12 @@
-namespace: acala
+namespace: substrate
 
-node:
+acala-node:
   defines: runnable
   containers:
     defines: containers
     node:
-      image: acala/acala-node:latest
+      image: acala/acala-node
+      image-tag: latest
       user: root
       ports:
         - 9944:9944
@@ -24,7 +25,8 @@ karura-node:
   containers:
     defines: containers
     node:
-      image: acala/karura-node:1.3.0
+      image: acala/karura-node
+      image-tag: latest
       user: root
       ports:
         - <- `${rpc-port}:9944`
@@ -47,7 +49,7 @@ karura-collator:
     defines: containers
     node:
       image: acala/karura-node
-      image-tag: <- `${image_tag}`
+      image-tag: latest
       user: root
       ports:
         - <- `${rpc-port}:9944`
@@ -69,8 +71,8 @@ acala-collator:
   containers:
     defines: containers
     node:
-      image: acala/karura-node
-      image-tag: <- `${image_tag}`
+      image: acala/acala-node
+      image-tag: latest
       user: root
       ports:
         - <- `${rpc-port}:9944`
@@ -86,3 +88,67 @@ acala-collator:
     ws-port: 9933
     p2p-port: 30333
     name: acala-collator-on-monk-io
+
+acala-node-v2.3.1:
+  defines: runnable
+  inherits: ./acala-node
+  version: 2.3.1
+  containers:
+    node:
+      image-tag: v2.3.1
+
+acala-node-latest:
+  defines: runnable
+  inherits: ./acala-node
+  version: 2.3.1
+  containers:
+    node:
+      image-tag: v2.3.1
+
+karura-node-latest:
+  defines: runnable
+  inherits: ./karura-node
+  version: 2.3.1
+  containers:
+    node:
+      image-tag: v2.3.1
+
+karura-node-v2.3.1:
+  defines: runnable
+  inherits: ./karura-node
+  version: 2.3.1
+  containers:
+    node:
+      image-tag: v2.3.1
+
+karura-collator-latest:
+  defines: runnable
+  inherits: ./karura-collator
+  version: 2.3.1
+  containers:
+    node:
+      image-tag: v2.3.1
+
+karura-collator-v2.3.1:
+  defines: runnable
+  inherits: ./karura-collator
+  version: 2.3.1
+  containers:
+    node:
+      image-tag: v2.3.1
+
+acala-collator-latest:
+  defines: runnable
+  inherits: ./acala-collator
+  version: 2.3.1
+  containers:
+    node:
+      image-tag: v2.3.1
+
+acala-collator-v2.3.1:
+  defines: runnable
+  inherits: ./acala-collator
+  version: 2.3.1
+  containers:
+    node:
+      image-tag: v2.3.1

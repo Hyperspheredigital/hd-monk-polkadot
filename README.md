@@ -22,35 +22,35 @@ monk load polkadot.yaml acala.yaml monitoring-files.yaml basic-monitoring.yaml
 - Run Polkadot node:
 
 ```
-monk run polkadot/node              # to run on local machine, or
-monk run -t mytag polkadot/node     # to run on the cluster (applies to all examples)
+monk run substrate/polkadot-node-latest              # to run on local machine, or
+monk run -t mytag substrate/polkadot-node-latest     # to run on the cluster (applies to all examples)
 ```
 
 - Run Polkadot node with persistent volume (cluster only):
 
 ```
-monk run -t mytag polkadot/node-persistent     # to run on the cluster
+monk run -t mytag substrate/polkadot-node-persistent-latest     # to run on the cluster
 ```
 
 - Run Polkadot validator with persistent volume (cluster only):
 
 ```
-monk run -t mytag polkadot/validator-node     # to run on the cluster
+monk run -t mytag substrate/polkadot-validator-node-latest     # to run on the cluster
 ```
 
 - Run Acala node:
 
 ```
-monk run acala/node
+monk run substrate/acala-node-latest
 ```
 
 - Add monitoring to your polkadot node:
 
 ```
-monk run -t mytag polkadot/monitoring
+monk run -t mytag substrate/monitoring
 ```
 
-This will start grafana & prometheus pre-configured to read stats off your `polkadot/node`.
+This will start grafana & prometheus pre-configured to read stats off your `substrate/polkadot-node`.
 
 ## Caveats
 
@@ -85,11 +85,10 @@ namespace: custom
 
 validator-node:
   defines: runnable
-  inherits: polkadot/node-persistent
+  inherits: substrate/polkadot-node-persistent-v0.9.16
   variables:
     options: --validator --ws-port 9944 --unsafe-ws-external --unsafe-pruning --pruning 1000 --rpc-methods=Unsafe -l'sync=warn,afg=warn,babe=warn' --telemetry-url 'wss://telemetry.polkadot.io/submit/ 1'
     name: hd-validator-node-on-monk-io
-    image_tag: v0.9.16
 ```
 - import and deploy:
 ```
@@ -121,13 +120,13 @@ namespace: custom
 
 prometheus:
   defines: runnable
-  inherits: polkadot/prometheus-custom
+  inherits: substrate/prometheus-custom
   variables:
     node-addr: <- get-hostname($runnable, "node") ":9615" ", 192.117.1.17:9615" concat
 
 alertmanager:
   defines: runnable
-  inherits: polkadot/alertmanager
+  inherits: substrate/alertmanager
   variables:
     slack-api-url: https://hooks.slack.com/services/XXXXXXXXX/XXXXXXXXX/XXXXXXXXXdasdaddas
     slack-channel: "alerts"
@@ -137,10 +136,12 @@ monitoring:
   runnable-list:
     - custom/alertmanager
     - custom/prometheus
-    - polkadot/grafana-custom
+    - substrate/grafana-custom
   variables:
     defines: variables
-    runnable: polkadot/validator-node
+    runnable: custom/validator-node
+    alertmanager_runnable: custom/alertmanager
+    prometheus_runnable: custom/prometheus
 ```
   - import and deploy:
 ```

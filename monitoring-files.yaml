@@ -1,4 +1,4 @@
-namespace: polkadot
+namespace: substrate
 
 metrics-dashboard:
   raw: true

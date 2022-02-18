@@ -1,4 +1,4 @@
-namespace: polkadot
+namespace: substrate
 
 prometheus:
   defines: runnable
@@ -66,7 +66,7 @@ grafana:
             options:
               path: /var/lib/grafana/dashboards
     dashboard:
-      inherits: polkadot/metrics-dashboard
+      inherits: substrate/metrics-dashboard
       container: grafana
       mode: 0666
       path: /var/lib/grafana/dashboards/polkadot.json
@@ -88,8 +88,9 @@ grafana:
 monitoring:
   defines: process-group
   runnable-list:
-    - polkadot/prometheus
-    - polkadot/grafana
+    - substrate/prometheus
+    - substrate/grafana
   variables:
     defines: variables
-    runnable: polkadot/node
+    runnable: substrate/polkadot-node-latest
+

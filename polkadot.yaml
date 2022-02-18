@@ -1,12 +1,12 @@
-namespace: polkadot
+namespace: substrate
 
-node:
+polkadot-node:
   defines: runnable
   containers:
     defines: containers
     node:
       image: parity/polkadot
-      image-tag: <- `${image_tag}`
+      image-tag: latest
       user: root
       ports:
         - <- `${rpc-port}:9944`
@@ -17,16 +17,15 @@ node:
       bash: <- `/usr/bin/polkadot --base-path=/data --name="${name}" --prometheus-external --rpc-cors=all ${options}`
   variables:
     defines: variables
-    image_tag: latest
     options: --ws-external --rpc-external
     name: polkadot-node-on-monk-io
     rpc-port: 9944
     ws-port: 9933
     p2p-port: 30333
 
-node-persistent:
+polkadot-node-persistent:
   defines: runnable
-  inherits: polkadot/node
+  inherits: substrate/polkadot-node
   volumes:
     defines: volumes
     polkadot-db:
@@ -34,17 +33,81 @@ node-persistent:
       kind: SSD
       path: <- `${monk-volume-path}/polkadot_${name}`
 
-validator-node:
+polkadot-validator-node:
   defines: runnable
-  inherits: polkadot/node-persistent
+  inherits: substrate/polkadot-node-persistent
   variables:
     options: --validator --ws-port 9944 --unsafe-ws-external --unsafe-pruning --pruning 1000 --rpc-methods=Unsafe -l'sync=warn,afg=warn,babe=warn' --telemetry-url 'wss://telemetry.polkadot.io/submit/ 1'
     name: hd-validator-node-on-monk-io
-    # image_tag: v0.9.16
 
 westend:
-  inherits: polkadot/node
+  inherits: substrate/polkadot-node
   defines: runnable
   variables:
     options: --ws-external --rpc-external --chain=westend
     name: westend-node-on-monk-io
+
+
+polkadot-node-v0.9.16:
+  defines: runnable
+  inherits: ./polkadot-node
+  version: 0.9.16
+  containers:
+    node:
+      image-tag: v0.9.16
+
+polkadot-node-latest:
+  defines: runnable
+  inherits: ./polkadot-node
+  version: 0.9.16
+  containers:
+    node:
+      image-tag: v0.9.16
+
+polkadot-node-persistent-latest:
+  defines: runnable
+  inherits: ./polkadot-node-persistent
+  version: 0.9.16
+  containers:
+    node:
+      image-tag: v0.9.16
+
+polkadot-node-persistent-v0.9.16:
+  defines: runnable
+  inherits: ./polkadot-node-persistent
+  version: 0.9.16
+  containers:
+    node:
+      image-tag: v0.9.16
+
+polkadot-validator-node-latest:
+  defines: runnable
+  inherits: ./polkadot-validator-node
+  version: 0.9.16
+  containers:
+    node:
+      image-tag: v0.9.16
+
+polkadot-validator-node-v0.9.16:
+  defines: runnable
+  inherits: ./polkadot-validator-node
+  version: 0.9.16
+  containers:
+    node:
+      image-tag: v0.9.16
+
+westend-latest:
+  defines: runnable
+  inherits: ./westend
+  version: 0.9.16
+  containers:
+    node:
+      image-tag: v0.9.16
+
+westend-v0.9.16:
+  defines: runnable
+  inherits: ./westend
+  version: 0.9.16
+  containers:
+    node:
+      image-tag: v0.9.16

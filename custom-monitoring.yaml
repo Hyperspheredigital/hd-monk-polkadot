@@ -1,4 +1,4 @@
-namespace: polkadot
+namespace: substrate
 
 prometheus-custom:
   defines: runnable
@@ -36,12 +36,12 @@ prometheus-custom:
             static_configs:
               - targets: ["{{ v "node-addr" }}"]
     polkadot_rules:
-      inherits: polkadot/polkadot-prometheus-rules
+      inherits: substrate/polkadot-prometheus-rules
       container: prometheus
       mode: 0666
       path: /etc/config/polkadot.rules
     substrate_rules:
-      inherits: polkadot/substrate-prometheus-rules
+      inherits: substrate/substrate-prometheus-rules
       container: prometheus
       mode: 0666
       path: /etc/config/substrate.rules
@@ -53,7 +53,7 @@ prometheus-custom:
       value: <- get-hostname($runnable, "node") ":9615" concat
     alertmgr-addr:
       type: string
-      value: <- get-hostname(polkadot/alertmanager, "alertmanager") ":9093" concat
+      value: <- get-hostname($alertmanager_runnable, "alertmanager") ":9093" concat
 
 grafana-custom:
   defines: runnable
@@ -67,7 +67,7 @@ grafana-custom:
     defines: variables
     prometheus-addr:
       type: string
-      value: <- get-hostname("polkadot/prometheus-custom", "prometheus")
+      value: <- get-hostname($prometheus_runnable, "prometheus")
   files:
     defines: files
     provisioning-dashboards:
@@ -89,7 +89,7 @@ grafana-custom:
             options:
               path: /var/lib/grafana/dashboards
     dashboard:
-      inherits: polkadot/metrics-dashboard
+      inherits: substrate/metrics-dashboard
       container: grafana
       mode: 0666
       path: /var/lib/grafana/dashboards/polkadot.json
@@ -151,9 +151,11 @@ alertmanager:
 custom-monitoring:
   defines: process-group
   runnable-list:
-    - polkadot/alertmanager
-    - polkadot/prometheus-custom
-    - polkadot/grafana
+    - substrate/alertmanager
+    - substrate/prometheus-custom
+    - substrate/grafana-custom
   variables:
     defines: variables
-    runnable: polkadot/validator-node
+    runnable: substrate/polkadot-validator-node-latest
+    alertmanager_runnable: substrate/alertmanager
+    prometheus_runnable: substrate/prometheus-custom
