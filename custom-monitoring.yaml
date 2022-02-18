@@ -1,0 +1,159 @@
+namespace: polkadot
+
+prometheus-custom:
+  defines: runnable
+  containers:
+    defines: containers
+    prometheus:
+      image: prom/prometheus:latest
+  files:
+    defines: files
+    config:
+      container: prometheus
+      path: /etc/prometheus/prometheus.yml
+      mode: 0666
+      raw: false
+      contents: |
+        global:
+          scrape_interval: 5s
+          evaluation_interval: 5s
+        rule_files:
+          - "/etc/config/polkadot.rules"
+          - "/etc/config/substrate.rules"
+        alerting:
+          alertmanagers:
+          - scheme: http
+            static_configs:
+            - targets:
+              - "{{ v "alertmgr-addr" }}"
+        scrape_configs:
+          - job_name: "prometheus"
+            scrape_interval: 5s
+            static_configs:
+              - targets: ["localhost:9090"]
+          - job_name: "substrate_node"
+            scrape_interval: 5s 
+            static_configs:
+              - targets: ["{{ v "node-addr" }}"]
+    polkadot_rules:
+      inherits: polkadot/polkadot-prometheus-rules
+      container: prometheus
+      mode: 0666
+      path: /etc/config/polkadot.rules
+    substrate_rules:
+      inherits: polkadot/substrate-prometheus-rules
+      container: prometheus
+      mode: 0666
+      path: /etc/config/substrate.rules
+  variables:
+    defines: variables
+    runnable: polkadot/node
+    node-addr:
+      type: string
+      value: <- get-hostname($runnable, "node") ":9615" concat
+    alertmgr-addr:
+      type: string
+      value: <- get-hostname(polkadot/alertmanager, "alertmanager") ":9093" concat
+
+grafana-custom:
+  defines: runnable
+  containers:
+    defines: containers
+    grafana:
+      image: grafana/grafana:latest
+      ports:
+        - 3000:3000
+  variables:
+    defines: variables
+    prometheus-addr:
+      type: string
+      value: <- get-hostname("polkadot/prometheus-custom", "prometheus")
+  files:
+    defines: files
+    provisioning-dashboards:
+      container: grafana
+      path: /etc/grafana/provisioning/dashboards/dashboards.yaml
+      mode: 0666
+      contents: |
+        apiVersion: 1
+        providers:
+          - name: 'polkadot-nodes-metrics'
+            orgId: 1
+            folder: ''
+            folderUid: ''
+            type: file
+            disableDeletion: false
+            editable: true
+            updateIntervalSeconds: 10
+            allowUiUpdates: true
+            options:
+              path: /var/lib/grafana/dashboards
+    dashboard:
+      inherits: polkadot/metrics-dashboard
+      container: grafana
+      mode: 0666
+      path: /var/lib/grafana/dashboards/polkadot.json
+    provisioning-datasources:
+      container: grafana
+      path: /etc/grafana/provisioning/datasources/datasources.yaml
+      mode: 0666
+      contents: |
+        apiVersion: 1
+        datasources:
+          - name: prometheus
+            type: prometheus
+            access: Browser
+            url: http://{{ v "prometheus-addr" }}:9090
+            isDefault: true
+            version: 1
+            editable: true
+
+alertmanager:
+  defines: runnable
+  containers:
+    defines: containers
+    alertmanager:
+      image: prom/alertmanager:latest
+      ports:
+        - 9093:9093
+      paths:
+        - <- `${monk-volume-path}/alertmanager:/etc/alertmanager/`
+      bash: <- `/bin/alertmanager --config.file=/etc/alertmanager/config.yml --storage.path=/alertmanager`
+  variables:
+    defines: variables
+    slack-api-url:
+      type: string
+      value: https://hooks.slack.com/services/XXXXXXXXX/XXXXXXXXX/XXXXXXXXXdasdaddas
+    slack-channel:
+      type: string
+      value: "alerts"
+  files:
+    defines: files
+    alertmanager-config:
+      container: alertmanager
+      path: /etc/alertmanager/config.yml
+      mode: 0666
+      contents: |
+        route:
+          receiver: slack
+          group_by:
+          - alertname
+          - severity
+          group_wait: 10s
+          repeat_interval: 30m
+
+        receivers:
+        - name: slack
+          slack_configs:
+          - api_url: {{ v "slack-api-url" }}
+            channel: #{{ v "slack-channel" }}
+
+custom-monitoring:
+  defines: process-group
+  runnable-list:
+    - polkadot/alertmanager
+    - polkadot/prometheus-custom
+    - polkadot/grafana
+  variables:
+    defines: variables
+    runnable: polkadot/validator-node

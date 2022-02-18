@@ -5,7 +5,8 @@ node:
   containers:
     defines: containers
     node:
-      image: parity/polkadot:v0.9.9-1
+      image: parity/polkadot
+      image-tag: <- `${image_tag}`
       user: root
       ports:
         - <- `${rpc-port}:9944`
@@ -13,11 +14,11 @@ node:
         - <- `${p2p-port}:30333`
       paths:
         - <- `${monk-volume-path}/polkadot_${name}:/data`
-      bash: <- `/usr/bin/polkadot --base-path=/data --name="${name}" --ws-external --rpc-external --prometheus-external --rpc-cors=all ${options}`
+      bash: <- `/usr/bin/polkadot --base-path=/data --name="${name}" --prometheus-external --rpc-cors=all ${options}`
   variables:
     defines: variables
-    options: ""
-    pre: ""
+    image_tag: latest
+    options: --ws-external --rpc-external
     name: polkadot-node-on-monk-io
     rpc-port: 9944
     ws-port: 9933
@@ -29,13 +30,21 @@ node-persistent:
   volumes:
     defines: volumes
     polkadot-db:
-      size: 100
+      size: 150
       kind: SSD
       path: <- `${monk-volume-path}/polkadot_${name}`
+
+validator-node:
+  defines: runnable
+  inherits: polkadot/node-persistent
+  variables:
+    options: --validator --ws-port 9944 --unsafe-ws-external --unsafe-pruning --pruning 1000 --rpc-methods=Unsafe -l'sync=warn,afg=warn,babe=warn' --telemetry-url 'wss://telemetry.polkadot.io/submit/ 1'
+    name: hd-validator-node-on-monk-io
+    # image_tag: v0.9.16
 
 westend:
   inherits: polkadot/node
   defines: runnable
   variables:
-    options: --chain=westend
+    options: --ws-external --rpc-external --chain=westend
     name: westend-node-on-monk-io
