@@ -67,6 +67,7 @@ polkadot.yaml   - basic Polkadot node, node with persistent volume, westend node
 acala.yaml      - basic Acala and Karura collator nodes
 monitoring-files.yaml - Grafana config for the Polkadot dashboard
 basic-monitoring.yaml - Prometheus + Grafana configured to work against a substrate node. Basic configuration
+custom-monitoring.yaml - Prometheus + Grafana + Alert Manager configurable.
 parachain-dev.yaml - experimental relaychain+parachain dev setup using Acala as an example
 ```
 
