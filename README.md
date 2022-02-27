@@ -13,7 +13,9 @@ Read the [Documentation](https://docs.monk.io/docs/).
 
 ## Basic Usage
 
-First, load all templates in this order:
+Update your runnable variable with name of appropriate version of polkadot node(node or node-persistent) in basic-monitoring.yaml e.g. `runnable: substrate/polkadot-node-persistent`.
+
+Load all templates in this order:
 
 ```
 monk load polkadot.yaml acala.yaml monitoring-files.yaml basic-monitoring.yaml
