@@ -17,7 +17,7 @@ acala-node:
       bash: <- `/usr/local/bin/acala --name="${name}" --ws-external --rpc-external ${options}`
   variables:
     defines: variables
-    options: ""
+    options: "-linfo --chain dev"
     name: acala-node-on-monk-io
 
 karura-node:
@@ -95,7 +95,7 @@ acala-node-v2.3.1:
   version: 2.3.1
   containers:
     node:
-      image-tag: v2.3.1
+      image-tag: 2.3.1
 
 acala-node-latest:
   defines: runnable
@@ -103,7 +103,7 @@ acala-node-latest:
   version: 2.3.1
   containers:
     node:
-      image-tag: v2.3.1
+      image-tag: 2.3.1
 
 karura-node-latest:
   defines: runnable
@@ -111,7 +111,7 @@ karura-node-latest:
   version: 2.3.1
   containers:
     node:
-      image-tag: v2.3.1
+      image-tag: 2.3.1
 
 karura-node-v2.3.1:
   defines: runnable
@@ -119,7 +119,7 @@ karura-node-v2.3.1:
   version: 2.3.1
   containers:
     node:
-      image-tag: v2.3.1
+      image-tag: 2.3.1
 
 karura-collator-latest:
   defines: runnable
@@ -127,7 +127,7 @@ karura-collator-latest:
   version: 2.3.1
   containers:
     node:
-      image-tag: v2.3.1
+      image-tag: 2.3.1
 
 karura-collator-v2.3.1:
   defines: runnable
@@ -135,7 +135,7 @@ karura-collator-v2.3.1:
   version: 2.3.1
   containers:
     node:
-      image-tag: v2.3.1
+      image-tag: 2.3.1
 
 acala-collator-latest:
   defines: runnable
@@ -143,7 +143,7 @@ acala-collator-latest:
   version: 2.3.1
   containers:
     node:
-      image-tag: v2.3.1
+      image-tag: 2.3.1
 
 acala-collator-v2.3.1:
   defines: runnable
@@ -151,4 +151,4 @@ acala-collator-v2.3.1:
   version: 2.3.1
   containers:
     node:
-      image-tag: v2.3.1
+      image-tag: 2.3.1

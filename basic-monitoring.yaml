@@ -27,7 +27,7 @@ prometheus:
               - targets: ["{{ v "polkadot-node-addr" }}:9615"]
   variables:
     defines: variables
-    runnable: polkadot/node
+    runnable: substrate/polkadot-node-persistent
     polkadot-node-addr:
       type: string
       value: <- get-hostname($runnable, "node")
@@ -44,7 +44,7 @@ grafana:
     defines: variables
     prometheus-addr:
       type: string
-      value: <- get-hostname("polkadot/prometheus", "prometheus")
+      value: <- get-hostname("substrate/prometheus", "prometheus")
   files:
     defines: files
     provisioning-dashboards:
